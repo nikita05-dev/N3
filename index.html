@@ -248,6 +248,15 @@
     background:#e6f5ef;color:#0f6e56;font-size:13px;font-weight:600;text-align:center;
   }
 </style>
+
+<style id="layout-fix">
+  .wrap{
+    padding-bottom:210px;
+  }
+  .footer-bar{
+    padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+</style>
 </head>
 <body><div id="offlineBadge">Offline</div>
 <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none">
@@ -276,7 +285,7 @@
 
   <div id="sections"></div>
 
-  <div class="done-banner" id="doneBanner">Alles erledigt. Guten Feierabend!</div>
+  <div class="done-banner" id="doneBanner">Alles erledigt. Danke!</div>
   <div class="brand-footer">designed by Dignity.</div>
 </div>
 
