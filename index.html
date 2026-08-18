@@ -217,6 +217,37 @@
   }
   .lock-btn:active{background:#f0efeb}
 </style>
+
+<style id="report-photo-css">
+  .item-main{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+  .item-content{flex:1;min-width:0}
+  .photo-actions{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap}
+  .photo-btn{
+    border:1px solid var(--line);background:#fff;color:var(--grey);
+    border-radius:9px;padding:6px 9px;font-size:12px;font-weight:700;
+  }
+  .photo-btn.required{border-color:var(--orange);color:var(--orange)}
+  .photo-preview{
+    width:58px;height:58px;object-fit:cover;border-radius:9px;
+    border:1px solid var(--line);display:none;margin-top:7px;
+  }
+  .photo-status{font-size:11px;color:var(--grey);margin-left:2px}
+  .report-btn{
+    max-width:480px;margin:0 auto 8px;display:block;width:100%;
+    padding:14px;border-radius:12px;border:0;
+    background:var(--orange);color:#fff;font-size:15px;font-weight:700;
+    opacity:.45;
+  }
+  .report-btn.ready{opacity:1}
+  .report-hint{
+    max-width:480px;margin:0 auto 8px;text-align:center;
+    font-size:12px;color:var(--grey);
+  }
+  .report-result{
+    display:none;margin:12px 0;padding:12px;border-radius:12px;
+    background:#e6f5ef;color:#0f6e56;font-size:13px;font-weight:600;text-align:center;
+  }
+</style>
 </head>
 <body><div id="offlineBadge">Offline</div>
 <div id="pinScreen">
@@ -249,7 +280,12 @@
 </div>
 
 <div class="footer-bar">
-  <button class="lock-btn" id="lockBtn">🔒 App sperren</button>
+  
+<div class="report-hint" id="reportHint">Alle Punkte abhaken. Für „Alarm scharfschalten“ ist ein Foto Pflicht.</div>
+<button class="report-btn" id="reportBtn">✅ Abschluss erstellen & teilen</button>
+<div class="report-result" id="reportResult"></div>
+
+    <button class="lock-btn" id="lockBtn">🔒 App sperren</button>
     <button class="reset-btn" id="resetBtn">Zurücksetzen</button>
 </div>
 
@@ -272,7 +308,7 @@ const DATA = [
     "Boden saubermachen",
     "Licht aus",
     "Haupttür zusperren",
-    "Alarm scharfschalten",
+    { label: "Alarm scharfschalten", photoRequired: true },
     "Außentore schließen"
   ]}
 ];
@@ -302,11 +338,118 @@ function saveState(checked){
 }
 
 let checked = loadState();
+let photos = {};
+let currentPhotoId = null;
 
 const sectionsEl = document.getElementById("sections");
 const fillEl = document.getElementById("fill");
 const labelEl = document.getElementById("label");
 const doneBanner = document.getElementById("doneBanner");
+
+
+function openPhotoPicker(id){
+  currentPhotoId = id;
+  const input = document.getElementById("photoInput");
+  input.value = "";
+  input.click();
+}
+
+document.getElementById("photoInput").addEventListener("change", e => {
+  const file = e.target.files && e.target.files[0];
+  if(!file || !currentPhotoId) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    photos[currentPhotoId] = reader.result;
+    render();
+  };
+  reader.readAsDataURL(file);
+});
+
+function getItemInfo(){
+  const list = [];
+  DATA.forEach((section, sIdx) => {
+    section.items.forEach((raw, iIdx) => {
+      const item = typeof raw === "string" ? {label: raw, photoRequired:false} : raw;
+      list.push({section: section.title, label: item.label, id: sIdx + "-" + iIdx, photoRequired: !!item.photoRequired});
+    });
+  });
+  return list;
+}
+
+function reportReady(){
+  const items = getItemInfo();
+  return items.every(item => checked[item.id]) &&
+         items.filter(item => item.photoRequired).every(item => !!photos[item.id]);
+}
+
+function updateReportButton(){
+  const btn = document.getElementById("reportBtn");
+  const hint = document.getElementById("reportHint");
+  if(!btn) return;
+  const ready = reportReady();
+  btn.classList.toggle("ready", ready);
+  btn.disabled = !ready;
+  hint.textContent = ready
+    ? "Alles vollständig. Der Abschluss kann geteilt werden."
+    : "Alle Punkte abhaken. Für „Alarm scharfschalten“ ist ein Foto Pflicht.";
+}
+
+async function createAndShareReport(){
+  if(!reportReady()) return;
+
+  const now = new Date();
+  const date = now.toLocaleDateString("de-DE");
+  const time = now.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
+  const items = getItemInfo();
+
+  let text = "NBG 3 – Schichtabschluss\n";
+  text += date + " · " + time + " Uhr\n\n";
+
+  let lastSection = "";
+  items.forEach(item => {
+    if(item.section !== lastSection){
+      text += item.section + "\n";
+      lastSection = item.section;
+    }
+    text += "✅ " + item.label + (photos[item.id] ? " 📷" : "") + "\n";
+  });
+
+  text += "\nAbschluss: vollständig\n";
+  text += "designed by Dignity.";
+
+  const files = [];
+  let photoNumber = 1;
+  for(const item of items){
+    if(!photos[item.id]) continue;
+    const res = await fetch(photos[item.id]);
+    const blob = await res.blob();
+    const safe = item.label.replace(/[^a-z0-9äöüß]+/gi, "_").replace(/^_|_$/g,"");
+    files.push(new File([blob], `NBG3_${photoNumber}_${safe || "Foto"}.jpg`, {type: blob.type || "image/jpeg"}));
+    photoNumber++;
+  }
+
+  try{
+    if(navigator.share && files.length && navigator.canShare && navigator.canShare({files})){
+      await navigator.share({title:"NBG 3 Schichtabschluss", text, files});
+    }else if(navigator.share){
+      await navigator.share({title:"NBG 3 Schichtabschluss", text});
+    }else{
+      await navigator.clipboard.writeText(text);
+      alert("Der Report wurde kopiert. Du kannst ihn jetzt in WhatsApp oder Mail einfügen.");
+    }
+    const result = document.getElementById("reportResult");
+    result.textContent = "Report erstellt. Du kannst ihn über den Teilen-Dialog verschicken.";
+    result.style.display = "block";
+  }catch(e){
+    if(e && e.name !== "AbortError") {
+      const result = document.getElementById("reportResult");
+      result.textContent = "Teilen wurde abgebrochen oder ist auf diesem Gerät nicht verfügbar.";
+      result.style.display = "block";
+    }
+  }
+}
+
+document.getElementById("reportBtn").addEventListener("click", createAndShareReport);
 
 function render(){
   sectionsEl.innerHTML = "";
@@ -321,12 +464,32 @@ function render(){
 
     section.items.forEach((label, iIdx) => {
       const id = sIdx + "-" + iIdx;
+      const itemData = typeof label === "string" ? { label, photoRequired: false } : label;
       const row = document.createElement("div");
       row.className = "item" + (checked[id] ? " checked" : "");
+
+      const hasPhoto = !!photos[id];
+      const requiredText = itemData.photoRequired ? ' <span class="photo-status">Foto erforderlich</span>' : '';
       row.innerHTML =
         '<div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg></div>' +
-        "<span>" + label + "</span>";
-      row.addEventListener("click", () => toggle(id));
+        '<div class="item-content"><span>' + itemData.label + '</span>' +
+        '<div class="photo-actions">' +
+        '<button type="button" class="photo-btn' + (itemData.photoRequired ? ' required' : '') + '" data-photo="' + id + '">📷 ' + (hasPhoto ? 'Foto ändern' : 'Foto hinzufügen') + '</button>' +
+        requiredText +
+        '</div>' +
+        '<img class="photo-preview" src="' + (hasPhoto ? photos[id] : '') + '" alt="Foto">' +
+        '</div>';
+
+      row.querySelector("[data-photo]").addEventListener("click", e => {
+        e.stopPropagation();
+        openPhotoPicker(id);
+      });
+      row.addEventListener("click", e => {
+        if (e.target.closest(".photo-actions")) return;
+        toggle(id);
+      });
+      const preview = row.querySelector(".photo-preview");
+      if (hasPhoto) preview.style.display = "block";
       card.appendChild(row);
     });
     sectionsEl.appendChild(card);
@@ -348,10 +511,12 @@ function updateProgress(){
   fillEl.style.width = pct + "%";
   labelEl.textContent = done + "/" + TOTAL;
   doneBanner.classList.toggle("show", done === TOTAL);
+  updateReportButton();
 }
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   checked = {};
+  photos = {};
   saveState(checked);
   render();
 });

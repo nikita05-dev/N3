@@ -1,4 +1,4 @@
-const CACHE = "nbg3-final-v5";
+const CACHE = "nbg3-report-v6";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
