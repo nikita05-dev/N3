@@ -153,20 +153,6 @@
     font-weight:600;
   }
   .reset-btn:active{background:#f0efeb;}
-  .lock-btn{
-    max-width:480px;
-    margin:0 auto 8px;
-    display:block;
-    width:100%;
-    padding:14px;
-    border-radius:12px;
-    border:1px solid var(--line);
-    background:var(--card);
-    color:var(--grey);
-    font-size:15px;
-    font-weight:600;
-  }
-  .lock-btn:active{background:#f0efeb;}
   .done-banner{
     margin-top:16px;
     padding:14px;
@@ -197,74 +183,39 @@
   }
 </style>
 
-<style>
+<style id="nbg3-pin-css">
   #pinScreen{
-    position:fixed;
-    inset:0;
-    z-index:9999;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-    background:var(--bg);
+    position:fixed; inset:0; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px; background:var(--bg);
   }
   #pinCard{
-    width:100%;
-    max-width:360px;
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:26px 20px 22px;
-    text-align:center;
+    width:100%; max-width:360px; background:var(--card);
+    border:1px solid var(--line); border-radius:18px;
+    padding:26px 20px 22px; text-align:center;
     box-shadow:0 12px 40px rgba(0,0,0,.08);
   }
-  #pinCard h2{
-    margin:0 0 6px;
-    font-size:24px;
-  }
-  #pinCard p{
-    margin:0 0 18px;
-    color:var(--grey);
-    font-size:14px;
-  }
+  #pinCard h2{margin:0 0 6px;font-size:24px}
+  #pinCard p{margin:0 0 18px;color:var(--grey);font-size:14px}
   #pinInput{
-    width:100%;
-    padding:14px;
-    border:1px solid var(--line);
-    border-radius:12px;
-    font-size:22px;
-    text-align:center;
-    letter-spacing:8px;
-    outline:none;
-    background:#fff;
+    width:100%;padding:14px;border:1px solid var(--line);
+    border-radius:12px;font-size:22px;text-align:center;
+    letter-spacing:8px;outline:none;background:#fff;
   }
-  #pinInput:focus{border-color:var(--orange);}
+  #pinInput:focus{border-color:var(--orange)}
   #pinButton{
-    width:100%;
-    margin-top:12px;
-    padding:14px;
-    border:0;
-    border-radius:12px;
-    background:var(--orange);
-    color:#fff;
-    font-size:16px;
-    font-weight:700;
+    width:100%;margin-top:12px;padding:14px;border:0;
+    border-radius:12px;background:var(--orange);color:#fff;
+    font-size:16px;font-weight:700;
   }
-  #pinError{
-    min-height:20px;
-    margin-top:10px;
-    color:#c0392b;
-    font-size:13px;
-    font-weight:600;
+  #pinError{min-height:20px;margin-top:10px;color:#c0392b;font-size:13px;font-weight:600}
+  .brand-footer{text-align:center;color:#9a9892;font-size:11px;margin-top:18px;padding-bottom:4px}
+  .lock-btn{
+    max-width:480px;margin:0 auto 8px;display:block;width:100%;
+    padding:14px;border-radius:12px;border:1px solid var(--line);
+    background:var(--card);color:var(--grey);font-size:15px;font-weight:600;
   }
-  .brand-footer{
-    text-align:center;
-    color:#9a9892;
-    font-size:11px;
-    margin-top:18px;
-    padding-bottom:4px;
-    letter-spacing:.2px;
-  }
+  .lock-btn:active{background:#f0efeb}
 </style>
 </head>
 <body><div id="offlineBadge">Offline</div>
@@ -273,7 +224,7 @@
     <h2>NBG 3</h2>
     <p>Bitte PIN eingeben</p>
     <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*"
-           maxlength="6" autocomplete="off" aria-label="PIN">
+           maxlength="4" autocomplete="off" aria-label="PIN">
     <button id="pinButton">Entsperren</button>
     <div id="pinError"></div>
     <div class="brand-footer">designed by Dignity.</div>
@@ -423,53 +374,53 @@ render();
   updateOnlineState();
 </script>
 
-<script>
-  // Simple local PIN gate for the PWA.
-  // Change the PIN here if you want a different one.
+<script id="nbg3-pin-js">
+(function(){
   const APP_PIN = "2026";
-  const PIN_UNLOCKED_KEY = "nbg3_pin_unlocked";
+  const UNLOCK_SESSION = "nbg3_session_unlocked_v2";
 
-  const pinScreen = document.getElementById("pinScreen");
-  const pinInput = document.getElementById("pinInput");
-  const pinButton = document.getElementById("pinButton");
-  const pinError = document.getElementById("pinError");
+  const screen = document.getElementById("pinScreen");
+  const input = document.getElementById("pinInput");
+  const button = document.getElementById("pinButton");
+  const error = document.getElementById("pinError");
+  const lock = document.getElementById("lockBtn");
 
-  function unlockApp(){
-    if (pinInput.value === APP_PIN) {
-      localStorage.setItem(PIN_UNLOCKED_KEY, "1");
-      pinScreen.style.display = "none";
-      pinInput.value = "";
-      pinError.textContent = "";
-    } else {
-      pinError.textContent = "Falscher PIN.";
-      pinInput.value = "";
-      pinInput.focus();
+  function showPin(){
+    screen.style.display = "flex";
+    input.value = "";
+    error.textContent = "";
+    setTimeout(() => input.focus(), 100);
+  }
+
+  function unlock(){
+    if(input.value === APP_PIN){
+      sessionStorage.setItem(UNLOCK_SESSION, "1");
+      screen.style.display = "none";
+      input.value = "";
+      error.textContent = "";
+    }else{
+      error.textContent = "Falscher PIN.";
+      input.value = "";
+      input.focus();
     }
   }
 
-  function initPin(){
-    if (localStorage.getItem(PIN_UNLOCKED_KEY) === "1") {
-      pinScreen.style.display = "none";
-    } else {
-      pinScreen.style.display = "flex";
-      setTimeout(() => pinInput.focus(), 100);
-    }
+  button.addEventListener("click", unlock);
+  input.addEventListener("keydown", e => {
+    if(e.key === "Enter") unlock();
+  });
+
+  lock.addEventListener("click", () => {
+    sessionStorage.removeItem(UNLOCK_SESSION);
+    showPin();
+  });
+
+  if(sessionStorage.getItem(UNLOCK_SESSION) === "1"){
+    screen.style.display = "none";
+  }else{
+    showPin();
   }
-
-
-  document.getElementById("lockBtn").addEventListener("click", () => {
-    localStorage.removeItem(PIN_UNLOCKED_KEY);
-    pinScreen.style.display = "flex";
-    pinInput.value = "";
-    pinError.textContent = "";
-    setTimeout(() => pinInput.focus(), 100);
-  });
-
-  pinButton.addEventListener("click", unlockApp);
-  pinInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") unlockApp();
-  });
-  initPin();
+})();
 </script>
 </body>
 </html>
