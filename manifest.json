@@ -1,0 +1,24 @@
+{
+  "name": "NBG 3 Abschluss",
+  "short_name": "NBG 3",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f6f4",
+  "theme_color": "#E36414",
+  "description": "Checkliste zum Schichtende",
+  "icons": [
+    {
+      "src": "icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
