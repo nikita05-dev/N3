@@ -153,6 +153,20 @@
     font-weight:600;
   }
   .reset-btn:active{background:#f0efeb;}
+  .lock-btn{
+    max-width:480px;
+    margin:0 auto 8px;
+    display:block;
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--grey);
+    font-size:15px;
+    font-weight:600;
+  }
+  .lock-btn:active{background:#f0efeb;}
   .done-banner{
     margin-top:16px;
     padding:14px;
@@ -284,7 +298,8 @@
 </div>
 
 <div class="footer-bar">
-  <button class="reset-btn" id="resetBtn">Zurücksetzen</button>
+  <button class="lock-btn" id="lockBtn">🔒 App sperren</button>
+    <button class="reset-btn" id="resetBtn">Zurücksetzen</button>
 </div>
 
 <script>
@@ -440,6 +455,15 @@ render();
       setTimeout(() => pinInput.focus(), 100);
     }
   }
+
+
+  document.getElementById("lockBtn").addEventListener("click", () => {
+    localStorage.removeItem(PIN_UNLOCKED_KEY);
+    pinScreen.style.display = "flex";
+    pinInput.value = "";
+    pinError.textContent = "";
+    setTimeout(() => pinInput.focus(), 100);
+  });
 
   pinButton.addEventListener("click", unlockApp);
   pinInput.addEventListener("keydown", e => {
